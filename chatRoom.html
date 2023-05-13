@@ -35,7 +35,7 @@
               backgroundColor: this.colors[(item.fromWho?.name || '').length % this.colors.length]
             }">{{item.fromWho?.name.slice(0,2) || '匿'}}</div>
 
-          <div>
+          <div class="texts">
             <div class="name">{{item.fromWho?.name}}</div>
             <div class="msg">{{item.data}}</div>
           </div>
@@ -100,8 +100,8 @@
           const msg = JSON.parse(event.data)
           if (msg.fromWho.name !== this.user.name) {
             this.list.push(msg);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(this.list))
             const listDom = document.querySelector('.chats-list')
-
             if (listDom && Math.abs(listDom.scrollTop + listDom.offsetHeight - temp1.scrollHeight) <= 10) {
               this.scrollToNew()
             }
@@ -159,9 +159,6 @@
         window.test = newHeight => {
           this.kbheight = newHeight
         }
-        setInterval(() => {
-          localStorage.setItem(HISTORY_KEY, JSON.stringify(this.list))
-        }, 3000)
       },
 
       beforeUnmount() {
@@ -256,6 +253,10 @@
       flex-direction: row-reverse;
     }
 
+    .chats-list-item.right .texts {
+      float: right;
+    }
+
     .avatars {
       height: 40px;
       width: 40px;
@@ -289,7 +290,10 @@
       background: #526177;
       color: white;
       margin-right: 0px;
+    }
 
+    .chats-list-item.right .name {
+      text-align: right
     }
   </style>
 </body>
