@@ -24,12 +24,22 @@
       <button @click="this.onInitUser" style="height: 32px; width: 100px;">Confirm</button>
     </div>
     <div v-else class="chat-panel" :style="'padding-bottom: ' + this.kbheight + 'px'">
-      {{isConnected ? 'connected' : 'disconnected'}}
+      <div class="header">
+        {{isConnected ? '已连接 · 法外之地' : '未连接'}}
+        <div @click="this.clearData">清除数据</div>
+      </div>
       <div class="chats-list">
         <div v-for="item in this.list" key="item.data"
           :class="'chats-list-item ' + (item.fromWho.name == this.user.name ? 'right' : '')">
-          <div class="name">{{item.fromWho?.name}}</div>
-          <div class="msg">{{item.data}}</div>
+          <div class="avatars" :style="{
+              backgroundColor: this.colors[(item.fromWho?.name || '').length % this.colors.length]
+            }">{{item.fromWho?.name.slice(0,2) || '匿'}}</div>
+
+          <div>
+            <div class="name">{{item.fromWho?.name}}</div>
+            <div class="msg">{{item.data}}</div>
+          </div>
+
         </div>
       </div>
       <div class="chats-input-area">
@@ -42,13 +52,23 @@
   </div>
   <script type="text/javascript">
     const url = 'ws://pgyoubbt.com:8848';
+    const USER_INFO_KEY = 'userName';
+    const HISTORY_KEY = 'history'
+
     const app = {
       data() {
+        this.colors = ['#622a1d', '#ffb3a7', '#75878a', '#88ADA6', '#bddd22',]
+        let history = []
+        try {
+          history = JSON.parse(localStorage.getItem(HISTORY_KEY))
+        } catch (err) {
+          console.error(err)
+        }
         return {
           kune: null,
           isConnected: false,
-          list: [],
-          user: null,
+          list: history || [],
+          user: {},
           kbheight: 0
         };
       },
@@ -77,8 +97,15 @@
           this.isConnected = false;
         },
         onMessage(event) {
-          console.log(event);
-          this.list.push(JSON.parse(event.data));
+          const msg = JSON.parse(event.data)
+          if (msg.fromWho.name !== this.user.name) {
+            this.list.push(msg);
+            const listDom = document.querySelector('.chats-list')
+
+            if (listDom && Math.abs(listDom.scrollTop + listDom.offsetHeight - temp1.scrollHeight) <= 10) {
+              this.scrollToNew()
+            }
+          }
         },
         onSend() {
           let dom = document.getElementById('msg-input');
@@ -88,7 +115,9 @@
               data: msgText,
               fromWho: this.user,
             };
+            this.list.push(msg);
             this.kune.send(msg);
+            this.scrollToNew()
             dom && (dom.innerText = '');
           }
         },
@@ -96,10 +125,28 @@
           const inputDom = document.getElementById('name-input');
           const nameText = inputDom.value;
           if (nameText) {
-            localStorage.setItem('userName', nameText)
-            this.user.name = localStorage.getItem('userName');
+            localStorage.setItem(USER_INFO_KEY, nameText)
+            this.user.name = nameText;
           }
         },
+        clearData() {
+          if (window.confirm("确认清除聊天列表和登录信息吗？")) {
+            localStorage.removeItem(USER_INFO_KEY);
+            localStorage.removeItem(HISTORY_KEY);
+            this.list = [];
+            this.user = {};
+          }
+
+        },
+        scrollToNew() {
+          setTimeout(() => {
+            document.querySelector('.chats-list').scrollTo({
+              top: 1000000000,
+              left: 0,
+              behavior: "smooth",
+            })
+          })
+        }
       },
       created() {
         this.connectServer();
@@ -112,6 +159,9 @@
         window.test = newHeight => {
           this.kbheight = newHeight
         }
+        setInterval(() => {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(this.list))
+        }, 3000)
       },
 
       beforeUnmount() {
@@ -122,15 +172,24 @@
     Vue.createApp(app).mount('#app');
   </script>
   <style type="text/css">
+    body {
+      margin: 0
+    }
+
     .chats-input-area {
       display: flex;
       flex-flow: row;
-      background: #f0f2f5;
+      background: #fafafa;
+      padding: 8px;
+      border-top: 1px solid #e8eaed;
+      border-bottom: 1px solid #e8eaed
     }
 
     .chats-input-area>button {
       flex: 0 0 auto;
       margin: 4px;
+      width: 56px;
+      font-size: 16px;
     }
 
     #msg-input {
@@ -145,7 +204,7 @@
 
     .init-panel {
       width: 100%;
-      height: calc(100vh - 16px);
+      height: calc(100vh);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -160,11 +219,21 @@
       max-width: 800px;
       min-width: 300px;
       margin: 0 auto;
-      height: calc(100vh - 16px);
+      height: calc(100vh);
       display: flex;
       flex-flow: column;
       box-sizing: border-box;
+      background-color: #f3f3f3;
+    }
 
+    .header {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 16px;
+      padding: 0 16px;
+      border-bottom: 1px solid #e8eaed
     }
 
     .chats-list {
@@ -175,32 +244,52 @@
 
     .chats-list-item {
       display: flex;
-      flex-flow: column;
+      flex-flow: row;
       align-items: flex-start;
+      justify-content: flex-start;
+
       overflow: hidden;
+      margin-top: 10px;
     }
 
     .chats-list-item.right {
-      align-items: flex-end;
+      flex-direction: row-reverse;
     }
 
-    .chats-list-item>.name {
-      font-size: 18px;
+    .avatars {
+      height: 40px;
+      width: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 10px;
+      background-color: papayawhip;
+      color: #fff;
+      font-size: 20px;
+      border-radius: 3px;
+    }
+
+    .chats-list-item .name {
+      font-size: 14px;
       color: #333;
     }
 
-    .chats-list-item>.msg {
-      background: #526177;
-      color: white;
+    .chats-list-item .msg {
+      background-color: #fff;
+      color: #333;
       padding: 2px 4px;
       border-radius: 4px;
       word-break: break-all;
-      margin-right: 40px;
+
+      padding: 4px 10px;
+      font-size: 16px;
     }
 
-    .chats-list-item.right>.msg {
+    .chats-list-item.right .msg {
+      background: #526177;
+      color: white;
       margin-right: 0px;
-      margin-left: 40px;
+
     }
   </style>
 </body>
