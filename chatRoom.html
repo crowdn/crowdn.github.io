@@ -25,7 +25,7 @@
     </div>
     <div v-else class="chat-panel" :style="'padding-bottom: ' + this.kbheight + 'px'">
       <div class="header">
-        {{isConnected ? '已连接 · 法外之地' : '未连接'}}
+        {{isConnected ? '已连接 · ' + this.topic : '未连接'}}
         <div @click="this.clearData">清除数据</div>
       </div>
       <div class="chats-list">
@@ -54,16 +54,26 @@
     const url = 'ws://pgyoubbt.com:8848';
     const USER_INFO_KEY = 'userName';
     const HISTORY_KEY = 'history'
-
+    function parse() {
+      if (location.search.length == 0) return {};
+      return location.search.slice(1, location.search.length).split('&').reduce((res, item) => {
+        const arr = item.split('=')
+        res[arr[0]] = arr[1]
+        return res
+      }, {})
+    }
     const app = {
       data() {
+        const qs = parse()
+        this.topic = decodeURIComponent(qs.topic) || '聊天室'
         this.colors = ['#622a1d', '#ffb3a7', '#75878a', '#88ADA6', '#bddd22',]
         let history = []
         try {
-          history = JSON.parse(localStorage.getItem(HISTORY_KEY))
+          history = JSON.parse(localStorage.getItem(this.genKey(HISTORY_KEY)))
         } catch (err) {
           console.error(err)
         }
+
         return {
           kune: null,
           isConnected: false,
@@ -82,7 +92,7 @@
       },
       methods: {
         connectServer() {
-          this.kune = new Kune({ url, topic: 'fawaizhidi' });
+          this.kune = new Kune({ url, topic: encodeURIComponent(this.topic) });
           window.kune = this.kune;
           this.kune.addListener('open', this.onOpen);
           this.kune.addListener('close', this.onClose);
@@ -98,9 +108,10 @@
         },
         onMessage(event) {
           const msg = JSON.parse(event.data)
+          localStorage.setItem(this.genKey(HISTORY_KEY), JSON.stringify(this.list))
+
           if (msg.fromWho.name !== this.user.name) {
             this.list.push(msg);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(this.list))
             const listDom = document.querySelector('.chats-list')
             if (listDom && Math.abs(listDom.scrollTop + listDom.offsetHeight - temp1.scrollHeight) <= 10) {
               this.scrollToNew()
@@ -130,14 +141,14 @@
           const inputDom = document.getElementById('name-input');
           const nameText = inputDom.value;
           if (nameText) {
-            localStorage.setItem(USER_INFO_KEY, nameText)
+            localStorage.setItem(this.genKey(USER_INFO_KEY), nameText)
             this.user.name = nameText;
           }
         },
         clearData() {
-          if (window.confirm("确认清除聊天列表和登录信息吗？")) {
-            localStorage.removeItem(USER_INFO_KEY);
-            localStorage.removeItem(HISTORY_KEY);
+          if (window.confirm("确认清除聊天列表和身份信息吗？")) {
+            localStorage.removeItem(this.genKey(USER_INFO_KEY));
+            localStorage.removeItem(this.genKey(HISTORY_KEY));
             this.list = [];
             this.user = {};
           }
@@ -151,6 +162,9 @@
               behavior: "smooth",
             })
           })
+        },
+        genKey(key) {
+          return key + this.topic
         }
       },
       created() {
