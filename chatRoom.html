@@ -43,7 +43,7 @@
         </div>
       </div>
       <div class="chats-input-area">
-        <div id="msg-input" :contenteditable="this.isUserInited"></div>
+        <div id="msg-input" :contenteditable="this.isUserInited" @focus="this.onfocus"></div>
         <button :disabled="!this.isUserInited" @click="this.onSend">
           Send
         </button>
@@ -120,6 +120,11 @@
             this.scrollToNew()
             dom && (dom.innerText = '');
           }
+        },
+        onfocus() {
+          setTimeout(() => {
+            this.scrollToNew();
+          }, 300)
         },
         onInitUser() {
           const inputDom = document.getElementById('name-input');
@@ -224,7 +229,7 @@
     }
 
     .header {
-      height: 56px;
+      flex: 0 0 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
