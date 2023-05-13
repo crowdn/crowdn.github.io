@@ -170,7 +170,7 @@
       created() {
         this.connectServer();
         this.user = {
-          name: localStorage.getItem('userName'),
+          name: localStorage.getItem(this.genKey(USER_INFO_KEY)),
         };
         keyboardHeight.on(newHeight => {
           // this.kbheight = newHeight
