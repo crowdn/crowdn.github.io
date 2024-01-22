@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <script src="https://unpkg.com/vue@next"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://ystnt.top/kune.min.js"></script>
   <script src="https://static.yximgs.com/udata/pkg/IS-DOCS-MD/keyboard-height.js"></script>
   <meta name="viewport"
@@ -65,7 +65,7 @@
     const app = {
       data() {
         const qs = parse()
-        this.topic = decodeURIComponent(qs.topic) || '聊天室'
+        this.topic = decodeURIComponent(qs.topic || 'chatRoom')
         this.colors = ['#622a1d', '#ffb3a7', '#75878a', '#88ADA6', '#bddd22',]
         let history = []
         try {
