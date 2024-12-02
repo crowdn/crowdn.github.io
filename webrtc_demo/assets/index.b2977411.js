@@ -9344,10 +9344,11 @@ function useSourceManager(webRtcRef) {
     const webRtc = webRtcRef.current;
     async function init() {
       const cameras = await webRtc.getCameraList();
-      const imgSize = await webRtc.measureImage(src);
+      await webRtc.measureImage(src);
       let width = 800;
-      const text = "\u{1F60E}WebRTC";
-      const textHeight = 250;
+      const display = await webRtc.getDisplayMediaStream();
+      const text = "\u{1F60E} Hello WebRTC";
+      const textHeight = 200;
       const { aspectRatio: textAspectRatio } = webRtc.measureText(text);
       setList([
         {
@@ -9365,17 +9366,17 @@ function useSourceManager(webRtcRef) {
           }
         },
         {
-          deviceId: "image",
-          sourceType: WebVisionSourceType.webimage,
+          deviceId: "display1",
+          sourceType: WebVisionSourceType.webdisplay,
           constraint: {
-            src
+            mediaStream: display.mediaStream
           },
-          order: 1,
+          order: 3,
           rect: {
-            x: 1920 / 2 + 50,
-            y: 0,
+            x: 0,
+            y: 1080 / 2,
             width,
-            height: width / imgSize.aspectRatio
+            height: width / display.size.aspectRatio
           }
         },
         {
@@ -15127,9 +15128,27 @@ function App() {
     list
   } = useSourceManager(webRtcRef);
   const [activeRect, setActiveRect] = react.exports.useState("");
-  return /* @__PURE__ */ jsx("div", {
+  const play = react.exports.useCallback(() => {
+    const canvas = document.querySelector(".rtc-view-wrapper canvas");
+    const video = document.querySelector("#result-video");
+    const mediaSteam = canvas.captureStream(24);
+    video.srcObject = mediaSteam;
+    video.play();
+  }, []);
+  const capture = react.exports.useCallback(() => {
+    const canvas = document.querySelector(".rtc-view-wrapper canvas");
+    const dataURL = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "canvas_image.png";
+    link.click();
+  }, []);
+  return /* @__PURE__ */ jsxs("div", {
     className: "App",
-    children: /* @__PURE__ */ jsx("div", {
+    children: [/* @__PURE__ */ jsx("h2", {
+      className: "title",
+      children: "\u64CD\u4F5C&\u9884\u89C8\u753B\u5E03(canvas\u5143\u7D20)"
+    }), /* @__PURE__ */ jsx("div", {
       className: "rtc-view-wrapper",
       style: {
         width: viewSize.width,
@@ -15160,7 +15179,29 @@ function App() {
           children: " "
         })]
       })
-    })
+    }), /* @__PURE__ */ jsxs("h2", {
+      className: "title",
+      children: ["\u6DF7\u6D41\u7ED3\u679C\uFF08video\u5143\u7D20\uFF09", /* @__PURE__ */ jsx("button", {
+        className: "opt",
+        onClick: play,
+        children: "\u64AD\u653E\u6DF7\u6D41\u89C6\u9891"
+      }), /* @__PURE__ */ jsx("button", {
+        className: "opt",
+        onClick: capture,
+        children: "\u622A\u56FE"
+      })]
+    }), /* @__PURE__ */ jsx("video", {
+      id: "result-video",
+      controls: true,
+      style: {
+        width: viewSize.width,
+        height: viewSize.height,
+        display: "block",
+        margin: "auto",
+        backgroundColor: "black"
+      },
+      autoPlay: true
+    })]
   });
 }
 client.createRoot(document.getElementById("root")).render(/* @__PURE__ */ jsx(App, {}));
