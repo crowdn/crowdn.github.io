@@ -9346,7 +9346,7 @@ function useSourceManager(webRtcRef) {
       const cameras = await webRtc.getCameraList();
       const imgSize = await webRtc.measureImage(src);
       let width = 800;
-      const text = "\u{1F60E}NOVA-RTC";
+      const text = "\u{1F60E}WebRTC";
       const textHeight = 250;
       const { aspectRatio: textAspectRatio } = webRtc.measureText(text);
       setList([
